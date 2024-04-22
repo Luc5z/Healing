@@ -2,17 +2,19 @@ from django.shortcuts import render, redirect
 from .models import Especialidades, DadosMedico, is_medico
 from django.contrib import messages
 from django.contrib.messages import constants
+from django.contrib.auth.models import User
 
 def cadastro_medico(request):
-
-    # if is_medico(request.user):
-    #     messages.add_message(request, constants.WARNING, 'Você já está cadastrado como médico.')
-    #     return redirect('/medicos/abrir_horario')
 
     if request.method == "GET":
         especialidades = Especialidades.objects.all()
         return render(request, 'cadastro_medico.html', {'especialidades': especialidades})
     elif request.method == "POST":
+
+        if is_medico(request.user):
+            messages.add_message(request, constants.WARNING, 'Você já está cadastrado como médico.')
+            return redirect('/medicos/abrir_horario')
+
         crm = request.POST.get('crm')
         nome = request.POST.get('nome')
         cep = request.POST.get('cep')
@@ -46,3 +48,15 @@ def cadastro_medico(request):
         messages.add_message(request, constants.SUCCESS, 'Cadastro médico realizado com sucesso.')
 
         return redirect('/medicos/abrir_horario')
+    
+def abrir_horario(request):
+
+    if (request.user == DadosMedico.objects.filter(user=request.user).exists()) == True:
+        messages.add_message(request, constants.WARNING, 'Somente médicos podem acessar essa página.')
+        return redirect('/pacientes/home')
+
+
+    if request.method == "GET":
+        dados_medicos = DadosMedico.objects.get(user=request.user)
+        return render(request, 'abrir_horario.html', {'dados_medicos': dados_medicos})
+    elif request.method == "POST":
